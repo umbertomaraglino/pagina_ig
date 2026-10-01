@@ -6,6 +6,7 @@ import PostGrid from './components/PostGrid'
 import StoryViewer from './components/StoryViewer'
 import PostModal from './components/PostModal'
 import CreateModal from './components/CreateModal'
+import LoginScreen from './components/LoginScreen'
 
 const FALLBACK_PROFILE = {
   id: null,
@@ -18,6 +19,9 @@ const FALLBACK_PROFILE = {
 }
 
 export default function App() {
+  const [authed, setAuthed] = useState(
+    () => !import.meta.env.VITE_APP_PASSWORD || localStorage.getItem('ig_auth') === '1'
+  )
   const [profile, setProfile] = useState(FALLBACK_PROFILE)
   const [posts, setPosts] = useState([])
   const [highlights, setHighlights] = useState([])
@@ -33,6 +37,8 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
   }, [darkMode])
+
+  if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />
 
   const fetchProfile = useCallback(async () => {
     const { data, error } = await supabase.from('profiles').select('*').limit(1).maybeSingle()
