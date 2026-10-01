@@ -25,15 +25,8 @@ export default function MusicPicker({ onSelect, onClose }) {
     setLoading(true)
     try {
       const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25`
-      let json
-      try {
-        const res = await fetch(itunesUrl)
-        if (!res.ok) throw new Error('not ok')
-        json = await res.json()
-      } catch {
-        const proxyRes = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(itunesUrl)}`)
-        json = await proxyRes.json()
-      }
+      const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(itunesUrl)}`)
+      const json = await res.json()
       setResults((json.results ?? []).filter(s => s.previewUrl))
     } catch {
       setResults([])
