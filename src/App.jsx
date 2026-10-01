@@ -38,8 +38,6 @@ export default function App() {
     document.documentElement.classList.toggle('dark', darkMode)
   }, [darkMode])
 
-  if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />
-
   const fetchProfile = useCallback(async () => {
     const { data, error } = await supabase.from('profiles').select('*').limit(1).maybeSingle()
     if (error) throw error
@@ -92,7 +90,9 @@ export default function App() {
     }
   }, [fetchProfile, fetchPosts, fetchHighlights])
 
-  useEffect(() => { fetchAll() }, [fetchAll])
+  useEffect(() => {
+    if (authed) fetchAll()
+  }, [authed, fetchAll])
 
   async function handleLike(postId, nowLiked) {
     const post = posts.find(p => p.id === postId)
@@ -197,6 +197,10 @@ export default function App() {
     setCreateModal({ show: false, tab: 'post' })
   }
 
+  // — tutti i hook sono sopra, ora i return condizionali —
+
+  if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
@@ -209,10 +213,7 @@ export default function App() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-black p-6 text-center gap-4">
         <p className="text-red-500 text-sm">{fetchError}</p>
-        <button
-          onClick={fetchAll}
-          className="px-5 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-semibold"
-        >
+        <button onClick={fetchAll} className="px-5 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-semibold">
           Riprova
         </button>
       </div>
