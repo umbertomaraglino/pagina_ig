@@ -188,10 +188,17 @@ export default function App() {
         avatarUrl = publicUrl
       }
       const updates = { bio, username, avatar_url: avatarUrl }
+      let savedProfile
       if (profile.id) {
-        await supabase.from('profiles').update(updates).eq('id', profile.id)
+        const { data, error } = await supabase.from('profiles').update(updates).eq('id', profile.id).select().single()
+        if (error) throw error
+        savedProfile = data
+      } else {
+        const { data, error } = await supabase.from('profiles').insert(updates).select().single()
+        if (error) throw error
+        savedProfile = data
       }
-      setProfile(prev => ({ ...prev, ...updates }))
+      if (savedProfile) setProfile(savedProfile)
     }
 
     setCreateModal({ show: false, tab: 'post' })
