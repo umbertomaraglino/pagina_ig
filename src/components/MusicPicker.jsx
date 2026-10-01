@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Search, Music, Play, Pause, Check } from 'lucide-react'
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 const TRENDING_TERM = 'pop hits 2024'
 
 export default function MusicPicker({ onSelect, onClose }) {
@@ -8,7 +10,6 @@ export default function MusicPicker({ onSelect, onClose }) {
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
   const [playingId, setPlayingId] = useState(null)
-  const [fetchError, setFetchError] = useState(null)
   const audioRef = useRef(new Audio())
 
   useEffect(() => {
@@ -24,17 +25,19 @@ export default function MusicPicker({ onSelect, onClose }) {
 
   async function loadSongs(term) {
     setLoading(true)
-    setFetchError(null)
     try {
-      const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25`
-      const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(itunesUrl)}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/music-search?term=${encodeURIComponent(term)}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_ANON_KEY,
+          },
+        }
+      )
       const json = await res.json()
-      const filtered = (json.results ?? []).filter(s => s.previewUrl)
-      setResults(filtered)
-      if (filtered.length === 0) setFetchError(`0 risultati (raw: ${JSON.stringify(json).slice(0, 80)})`)
-    } catch (e) {
-      setFetchError(e.message)
+      setResults((json.results ?? []).filter(s => s.previewUrl))
+    } catch {
       setResults([])
     }
     setLoading(false)
@@ -106,10 +109,6 @@ export default function MusicPicker({ onSelect, onClose }) {
         {loading ? (
           <div className="flex justify-center py-14">
             <div className="w-8 h-8 border-2 border-gray-200 dark:border-gray-700 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
-          </div>
-        ) : fetchError ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-2 px-4">
-            <p className="text-red-400 text-xs text-center break-all">{fetchError}</p>
           </div>
         ) : results.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-300 dark:text-gray-600">
