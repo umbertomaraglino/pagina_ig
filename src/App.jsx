@@ -9,13 +9,8 @@ import CreateModal from './components/CreateModal'
 import LoginScreen from './components/LoginScreen'
 
 const FALLBACK_PROFILE = {
-  id: null,
-  username: 'myprofile',
-  avatar_url: null,
-  bio: '',
-  posts_count: 0,
-  followers_count: 0,
-  following_count: 0,
+  id: null, username: 'myprofile', avatar_url: null, bio: '',
+  posts_count: 0, followers_count: 0, following_count: 0,
 }
 
 export default function App() {
@@ -46,8 +41,7 @@ export default function App() {
 
   const fetchPosts = useCallback(async () => {
     let { data, error } = await supabase
-      .from('posts')
-      .select('*, post_images(*)')
+      .from('posts').select('*, post_images(*)')
       .order('created_at', { ascending: false })
     if (error) {
       const fallback = await supabase.from('posts').select('*').order('created_at', { ascending: false })
@@ -62,19 +56,16 @@ export default function App() {
 
   const fetchHighlights = useCallback(async () => {
     const { data, error } = await supabase
-      .from('highlights')
-      .select('*, highlight_stories(*)')
+      .from('highlights').select('*, highlight_stories(*)')
       .order('created_at', { ascending: true })
     if (error) throw error
     if (data) {
-      setHighlights(
-        data.map(h => ({
-          ...h,
-          highlight_stories: (h.highlight_stories ?? []).sort(
-            (a, b) => new Date(a.created_at) - new Date(b.created_at)
-          ),
-        }))
-      )
+      setHighlights(data.map(h => ({
+        ...h,
+        highlight_stories: (h.highlight_stories ?? []).sort(
+          (a, b) => new Date(a.created_at) - new Date(b.created_at)
+        ),
+      })))
     }
   }, [])
 
@@ -94,6 +85,8 @@ export default function App() {
     if (authed) fetchAll()
   }, [authed, fetchAll])
 
+  // ── Post handlers ──────────────────────────────────────────────
+
   async function handleLike(postId, nowLiked) {
     const post = posts.find(p => p.id === postId)
     if (!post) return
@@ -104,10 +97,54 @@ export default function App() {
     if (activePost?.id === postId) setActivePost(updated)
   }
 
+  async function handleDeletePost(postId) {
+    await supabase.from('post_images').delete().eq('post_id', postId)
+    await supabase.from('posts').delete().eq('id', postId)
+    setPosts(prev => prev.filter(p => p.id !== postId))
+    const newCount = Math.max(0, profile.posts_count - 1)
+    if (profile.id) await supabase.from('profiles').update({ posts_count: newCount }).eq('id', profile.id)
+    setProfile(prev => ({ ...prev, posts_count: newCount }))
+  }
+
+  function handleUpdatePost(updatedPost) {
+    setPosts(prev => prev.map(p => p.id === updatedPost.id ? updatedPost : p))
+    setActivePost(updatedPost)
+  }
+
+  // ── Story handlers ─────────────────────────────────────────────
+
+  async function handleDeleteStory(highlightId, storyId, wasLast) {
+    if (wasLast) {
+      await supabase.from('highlights').delete().eq('id', highlightId)
+      setHighlights(prev => prev.filter(h => h.id !== highlightId))
+      setActiveStory(null)
+    } else {
+      const { data: remaining } = await supabase
+        .from('highlight_stories').select('*')
+        .eq('highlight_id', highlightId)
+        .order('created_at', { ascending: true })
+      if (remaining) {
+        setHighlights(prev => prev.map(h =>
+          h.id === highlightId ? { ...h, highlight_stories: remaining } : h
+        ))
+        setActiveStory(prev => ({ ...prev, highlight_stories: remaining }))
+      }
+    }
+  }
+
+  function handleUpdateStory(highlightId, storyId, updates) {
+    const patch = (stories) => stories.map(s => s.id === storyId ? { ...s, ...updates } : s)
+    setHighlights(prev => prev.map(h =>
+      h.id === highlightId ? { ...h, highlight_stories: patch(h.highlight_stories) } : h
+    ))
+    setActiveStory(prev => ({ ...prev, highlight_stories: patch(prev.highlight_stories) }))
+  }
+
+  // ── Create handler ─────────────────────────────────────────────
+
   async function handleCreate(type, payload) {
     if (type === 'post') {
       const { imageFiles, caption } = payload
-
       const uploadedUrls = await Promise.all(
         imageFiles.map(async (file) => {
           const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
@@ -117,35 +154,23 @@ export default function App() {
           return supabase.storage.from('posts').getPublicUrl(path).data.publicUrl
         })
       )
-
-      const { data: post, error: dbErr } = await supabase
-        .from('posts')
-        .insert({
-          image_url:         uploadedUrls[0],
-          caption,
-          music_title:       payload.musicTitle       || null,
-          music_artist:      payload.musicArtist      || null,
-          music_preview_url: payload.musicPreviewUrl  || null,
-          music_artwork_url: payload.musicArtworkUrl  || null,
-        })
-        .select().single()
+      const { data: post, error: dbErr } = await supabase.from('posts').insert({
+        image_url: uploadedUrls[0], caption,
+        music_title: payload.musicTitle || null,
+        music_artist: payload.musicArtist || null,
+        music_preview_url: payload.musicPreviewUrl || null,
+        music_artwork_url: payload.musicArtworkUrl || null,
+      }).select().single()
       if (dbErr) throw dbErr
-
       if (uploadedUrls.length > 0) {
         await supabase.from('post_images').insert(
           uploadedUrls.map((url, i) => ({ post_id: post.id, image_url: url, position: i }))
         )
       }
-
-      const fullPost = {
-        ...post,
-        post_images: uploadedUrls.map((url, i) => ({ image_url: url, position: i })),
-      }
+      const fullPost = { ...post, post_images: uploadedUrls.map((url, i) => ({ image_url: url, position: i })) }
       setPosts(prev => [fullPost, ...prev])
       const newCount = profile.posts_count + 1
-      if (profile.id) {
-        await supabase.from('profiles').update({ posts_count: newCount }).eq('id', profile.id)
-      }
+      if (profile.id) await supabase.from('profiles').update({ posts_count: newCount }).eq('id', profile.id)
       setProfile(prev => ({ ...prev, posts_count: newCount }))
 
     } else if (type === 'highlight') {
@@ -155,23 +180,18 @@ export default function App() {
       const { error: upErr } = await supabase.storage.from('highlights').upload(path, imageFile)
       if (upErr) throw upErr
       const { data: { publicUrl } } = supabase.storage.from('highlights').getPublicUrl(path)
-
       let hId = highlightId
       if (!hId || hId === 'new') {
         const { data: hl, error: hlErr } = await supabase
-          .from('highlights')
-          .insert({ title, cover_image_url: publicUrl })
-          .select()
-          .single()
+          .from('highlights').insert({ title, cover_image_url: publicUrl }).select().single()
         if (hlErr) throw hlErr
         hId = hl.id
       }
       await supabase.from('highlight_stories').insert({
-        highlight_id:      hId,
-        image_url:         publicUrl,
-        filter_name:       filterName       ?? 'normal',
-        music_title:       musicTitle       || null,
-        music_artist:      musicArtist      || null,
+        highlight_id: hId, image_url: publicUrl,
+        filter_name: filterName ?? 'normal',
+        music_title: musicTitle || null,
+        music_artist: musicArtist || null,
         music_preview_url: payload.musicPreviewUrl || null,
         music_artwork_url: payload.musicArtworkUrl || null,
       })
@@ -200,11 +220,10 @@ export default function App() {
       }
       if (savedProfile) setProfile(savedProfile)
     }
-
     setCreateModal({ show: false, tab: 'post' })
   }
 
-  // — tutti i hook sono sopra, ora i return condizionali —
+  // ── Render ─────────────────────────────────────────────────────
 
   if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />
 
@@ -220,9 +239,7 @@ export default function App() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-black p-6 text-center gap-4">
         <p className="text-red-500 text-sm">{fetchError}</p>
-        <button onClick={fetchAll} className="px-5 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-semibold">
-          Riprova
-        </button>
+        <button onClick={fetchAll} className="px-5 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-semibold">Riprova</button>
       </div>
     )
   }
@@ -237,11 +254,9 @@ export default function App() {
             </svg>
             <h1 className="font-bold text-base">{profile.username}</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setDarkMode(d => !d)} aria-label="Cambia tema" className="opacity-60">
-              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-          </div>
+          <button onClick={() => setDarkMode(d => !d)} aria-label="Cambia tema" className="opacity-60">
+            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
         </header>
 
         <ProfileHeader
@@ -260,7 +275,12 @@ export default function App() {
       </div>
 
       {activeStory && (
-        <StoryViewer highlight={activeStory} onClose={() => setActiveStory(null)} />
+        <StoryViewer
+          highlight={activeStory}
+          onClose={() => setActiveStory(null)}
+          onDeleteStory={handleDeleteStory}
+          onUpdateStory={handleUpdateStory}
+        />
       )}
 
       {activePost && (
@@ -269,6 +289,8 @@ export default function App() {
           profile={profile}
           onClose={() => setActivePost(null)}
           onLike={handleLike}
+          onDelete={handleDeletePost}
+          onUpdate={handleUpdatePost}
         />
       )}
 
