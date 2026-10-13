@@ -1,56 +1,56 @@
 # IGPage
 
-> Your Instagram profile, without Instagram.
+> Il tuo profilo Instagram, senza Instagram.
 
-The best part of Instagram is the profile — it's a visual diary you can scroll through to relive memories. Everything else (the feed, the reels, the infinite scroll) is just noise. IGPage keeps only the good part: a personal, password-protected profile page you can open anytime, anywhere, and share with anyone — even people who don't have an Instagram account.
+La parte più bella di Instagram è il profilo — è un diario visivo da scorrere per rivivere i ricordi. Tutto il resto (il feed, i reel, lo scroll infinito) è solo rumore. IGPage tiene solo la parte che vale: una pagina profilo personale, protetta da password, sempre accessibile e condivisibile con chiunque — anche con chi non ha Instagram.
 
-**Live demo:** [umbertomaraglino.github.io/pagina_ig](https://umbertomaraglino.github.io/pagina_ig)
+**Demo live:** [umbertomaraglino.github.io/pagina_ig](https://umbertomaraglino.github.io/pagina_ig)
 
 ---
 
-## Screenshots
+## Screenshot
 
 <p align="center">
-  <img src="foto/Screenshot%202026-10-13%20091634.png" width="280" alt="Login screen" />
+  <img src="foto/Screenshot%202026-10-13%20091634.png" width="280" alt="Schermata di login" />
   &nbsp;&nbsp;
-  <img src="foto/WhatsApp%20Image%202026-10-13%20at%2011.04.22.jpeg" width="180" alt="Profile page" />
+  <img src="foto/WhatsApp%20Image%202026-10-13%20at%2011.04.22.jpeg" width="180" alt="Pagina profilo" />
   &nbsp;&nbsp;
-  <img src="foto/WhatsApp%20Image%202026-10-13%20at%2011.04.22%20(1).jpeg" width="180" alt="Post with music" />
+  <img src="foto/WhatsApp%20Image%202026-10-13%20at%2011.04.22%20(1).jpeg" width="180" alt="Post con musica" />
   &nbsp;&nbsp;
-  <img src="foto/WhatsApp%20Image%202026-10-13%20at%2011.04.22%20(2).jpeg" width="180" alt="Story viewer" />
+  <img src="foto/WhatsApp%20Image%202026-10-13%20at%2011.04.22%20(2).jpeg" width="180" alt="Visualizzatore storie" />
 </p>
 
 ---
 
-## What it does
+## Cosa fa
 
-- **Password-protected** — only you (and who you share the link with) can see it
-- **Profile & bio** — avatar, username, custom bio
-- **Posts** — photo grid with multi-image carousels, captions, likes, and comments
-- **Highlights** — story collections with fullscreen viewer (like Instagram Stories)
-- **Music** — attach a 30-second Deezer preview to any post or story; it autoplays when opened
-- **Full editing** — add/remove photos, change captions, swap music, delete posts and stories
-- **Image editor** — crop, zoom, and rotate photos before uploading stories
-- **Dark mode** — follows system preference, togglable manually
-- **Mobile-first** — designed to feel like a native app on iPhone
+- **Protetto da password** — solo tu (e chi ha il link) può vederlo
+- **Profilo e bio** — avatar, username, biografia personalizzata
+- **Post** — griglia foto con caroselli multi-immagine, didascalie, like e commenti
+- **Storie in evidenza** — raccolte di storie con visualizzatore a schermo intero
+- **Musica** — allega un'anteprima Deezer di 30 secondi a qualsiasi post o storia; parte in automatico all'apertura
+- **Modifica completa** — aggiungi/rimuovi foto, cambia didascalia, cambia musica, elimina post e storie
+- **Editor immagini** — ritaglia, zooma e ruota le foto prima di caricarle nelle storie
+- **Modalità scura** — segue le preferenze di sistema, attivabile manualmente
+- **Mobile-first** — pensato per sembrare un'app nativa su iPhone
 
 ---
 
-## Tech stack
+## Stack tecnologico
 
-| Layer | Tech |
+| Livello | Tecnologia |
 |---|---|
 | Frontend | React 18 + Vite 5 |
-| Styling | Tailwind CSS 3 (dark mode) |
-| Database & Storage | Supabase (PostgreSQL + Storage buckets) |
-| Music API | Deezer, proxied via Supabase Edge Function (Deno) |
+| Stile | Tailwind CSS 3 (dark mode) |
+| Database e Storage | Supabase (PostgreSQL + bucket di storage) |
+| API Musica | Deezer, proxiata tramite Supabase Edge Function (Deno) |
 | Hosting | GitHub Pages |
-| CI/CD | GitHub Actions (auto-deploy on push to `main`) |
+| CI/CD | GitHub Actions (deploy automatico ad ogni push su `main`) |
 
-The Supabase Edge Function is the key piece that makes music search work: the browser calls the Supabase domain (no CORS issues), and the function fetches from Deezer server-side.
+La Supabase Edge Function è il pezzo chiave per la ricerca musicale: il browser chiama il dominio Supabase (nessun problema di CORS), e la funzione recupera i dati da Deezer lato server.
 
 ---
 
-## Why I built this
+## Perché l'ho costruito
 
-Instagram's profile page is the one feature worth keeping — it's a memory machine. But using Instagram just to look at your own profile means dealing with an algorithm designed to keep you scrolling. IGPage is a self-hosted, distraction-free version of just that one page: yours, private, always accessible, no app required.
+Il profilo Instagram è l'unica funzione che vale la pena tenere — è una macchina per i ricordi. Ma usare Instagram solo per guardare il proprio profilo significa fare i conti con un algoritmo progettato per tenerti incollato allo schermo. IGPage è una versione self-hosted e senza distrazioni di quella sola pagina: tua, privata, sempre accessibile, senza bisogno di nessuna app.
