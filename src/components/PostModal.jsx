@@ -144,7 +144,7 @@ export default function PostModal({ post, profile, onClose, onLike, onDelete, on
                   className="flex-shrink-0"
                   style={{ width: '100%', height: '100%', minWidth: '100%', scrollSnapAlign: 'center' }}
                 >
-                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <img src={url} alt="" className="w-full h-full object-contain" />
                 </div>
               ))}
             </div>
