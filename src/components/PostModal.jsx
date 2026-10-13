@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { ChevronLeft, MoreHorizontal, Heart, MessageCircle, Send, Bookmark, Music, Pause, Trash2 } from 'lucide-react'
+import { ChevronLeft, MoreHorizontal, Heart, MessageCircle, Send, Bookmark, Music, Pause, Trash2, Pencil } from 'lucide-react'
 import { supabase } from '../supabaseClient'
 
-export default function PostModal({ post, profile, onClose, onLike, onDelete }) {
+export default function PostModal({ post, profile, onClose, onLike, onDelete, onEdit }) {
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -266,6 +266,14 @@ export default function PostModal({ post, profile, onClose, onLike, onDelete }) 
             onClick={e => e.stopPropagation()}
           >
             <div className="mx-auto mt-2.5 mb-3 w-9 h-1 rounded-full bg-gray-300 dark:bg-gray-700" />
+            <button
+              onClick={() => { setShowMenu(false); onEdit(post) }}
+              className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+            >
+              <Pencil size={20} />
+              <span className="font-semibold text-base">Modifica post</span>
+            </button>
+            <div className="h-px bg-gray-200 dark:bg-gray-800 mx-4" />
             <button
               onClick={handleDelete}
               disabled={deleting}

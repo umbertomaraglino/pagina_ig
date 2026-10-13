@@ -5,6 +5,36 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 const TRENDING_TERM = 'top hits'
 
+function normalizeSongs(json) {
+  // Deezer format: { data: [...] }
+  if (Array.isArray(json?.data)) {
+    return json.data
+      .filter(s => s.preview)
+      .map(s => ({
+        id: s.id,
+        title: s.title,
+        artist: s.artist?.name ?? '',
+        preview: s.preview,
+        cover: s.album?.cover_small ?? null,
+        coverMedium: s.album?.cover_medium ?? null,
+      }))
+  }
+  // iTunes format: { results: [...] }
+  if (Array.isArray(json?.results)) {
+    return json.results
+      .filter(s => s.previewUrl)
+      .map(s => ({
+        id: s.trackId,
+        title: s.trackName,
+        artist: s.artistName ?? '',
+        preview: s.previewUrl,
+        cover: s.artworkUrl60 ?? null,
+        coverMedium: s.artworkUrl100 ?? null,
+      }))
+  }
+  return []
+}
+
 export default function MusicPicker({ onSelect, onClose }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
@@ -36,7 +66,7 @@ export default function MusicPicker({ onSelect, onClose }) {
         }
       )
       const json = await res.json()
-      setResults((json.data ?? []).filter(s => s.preview))
+      setResults(normalizeSongs(json))
     } catch {
       setResults([])
     }
@@ -61,9 +91,9 @@ export default function MusicPicker({ onSelect, onClose }) {
     audioRef.current.pause()
     onSelect({
       title:      song.title,
-      artist:     song.artist?.name ?? '',
+      artist:     song.artist,
       previewUrl: song.preview,
-      artworkUrl: song.album?.cover_medium ?? song.album?.cover_small ?? null,
+      artworkUrl: song.coverMedium ?? song.cover ?? null,
     })
   }
 
@@ -139,8 +169,8 @@ function SongRow({ song, playing, onPlay, onSelect }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 dark:border-gray-900">
       <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-gray-700">
-        {song.album?.cover_small ? (
-          <img src={song.album.cover_small} alt="" className="w-full h-full object-cover" />
+        {song.cover ? (
+          <img src={song.cover} alt="" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Music size={18} className="text-gray-400" />
@@ -150,7 +180,7 @@ function SongRow({ song, playing, onPlay, onSelect }) {
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold leading-tight truncate">{song.title}</p>
-        <p className="text-xs text-gray-400 truncate mt-0.5">{song.artist?.name}</p>
+        <p className="text-xs text-gray-400 truncate mt-0.5">{song.artist}</p>
       </div>
 
       <button

@@ -6,6 +6,7 @@ import PostGrid from './components/PostGrid'
 import StoryViewer from './components/StoryViewer'
 import PostModal from './components/PostModal'
 import CreateModal from './components/CreateModal'
+import EditPostModal from './components/EditPostModal'
 import LoginScreen from './components/LoginScreen'
 
 const FALLBACK_PROFILE = {
@@ -28,6 +29,7 @@ export default function App() {
   const [activeStory, setActiveStory] = useState(null)
   const [activePost, setActivePost] = useState(null)
   const [createModal, setCreateModal] = useState({ show: false, tab: 'post' })
+  const [editingPost, setEditingPost] = useState(null)
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(null)
   const [darkMode, setDarkMode] = useState(
@@ -151,6 +153,66 @@ export default function App() {
     }
     setProfile(prev => ({ ...prev, posts_count: newCount }))
     setActivePost(null)
+  }
+
+  async function handleEditPost({ postId, existingImages, removedIds, newFiles, caption, musicTitle, musicArtist, musicPreviewUrl, musicArtworkUrl }) {
+    // Cancella foto rimosse dallo storage
+    for (const id of removedIds) {
+      const img = posts.find(p => p.id === postId)?.post_images?.find(i => i.id === id)
+      if (img?.image_url) {
+        const marker = '/object/public/posts/'
+        const idx = img.image_url.indexOf(marker)
+        if (idx >= 0) {
+          const path = decodeURIComponent(img.image_url.slice(idx + marker.length))
+          await supabase.storage.from('posts').remove([path])
+        }
+      }
+      await supabase.from('post_images').delete().eq('id', id)
+    }
+
+    // Carica nuove foto
+    const uploadedUrls = await Promise.all(
+      newFiles.map(async (file) => {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+        const path = `${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`
+        const { error } = await supabase.storage.from('posts').upload(path, file)
+        if (error) throw error
+        return supabase.storage.from('posts').getPublicUrl(path).data.publicUrl
+      })
+    )
+
+    // Inserisci nuove foto in post_images
+    const startPosition = existingImages.length
+    if (uploadedUrls.length > 0) {
+      await supabase.from('post_images').insert(
+        uploadedUrls.map((url, i) => ({ post_id: postId, image_url: url, position: startPosition + i }))
+      )
+    }
+
+    // Aggiorna il post
+    const firstImageUrl = existingImages[0]?.image_url ?? uploadedUrls[0] ?? null
+    await supabase.from('posts').update({
+      caption,
+      image_url:         firstImageUrl,
+      music_title:       musicTitle       || null,
+      music_artist:      musicArtist      || null,
+      music_preview_url: musicPreviewUrl  || null,
+      music_artwork_url: musicArtworkUrl  || null,
+    }).eq('id', postId)
+
+    // Ricarica il post aggiornato
+    const { data } = await supabase
+      .from('posts')
+      .select('*, post_images(*)')
+      .eq('id', postId)
+      .single()
+
+    if (data) {
+      const updated = { ...data, post_images: (data.post_images ?? []).sort((a, b) => a.position - b.position) }
+      setPosts(prev => prev.map(p => p.id === postId ? updated : p))
+      setActivePost(updated)
+    }
+    setEditingPost(null)
   }
 
   async function handleLike(postId, nowLiked) {
@@ -333,6 +395,15 @@ export default function App() {
           onClose={() => setActivePost(null)}
           onLike={handleLike}
           onDelete={handleDeletePost}
+          onEdit={post => setEditingPost(post)}
+        />
+      )}
+
+      {editingPost && (
+        <EditPostModal
+          post={editingPost}
+          onClose={() => setEditingPost(null)}
+          onSave={handleEditPost}
         />
       )}
 
