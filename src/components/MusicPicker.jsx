@@ -3,6 +3,25 @@ import { X, Search, Music, Play, Pause, Check } from 'lucide-react'
 
 const TRENDING_TERM = 'pop hits 2024'
 
+function itunesJsonp(term) {
+  return new Promise((resolve, reject) => {
+    const cb = `_itcb_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    const script = document.createElement('script')
+    const timer = setTimeout(() => { cleanup(); reject(new Error('Timeout')) }, 8000)
+
+    function cleanup() {
+      clearTimeout(timer)
+      delete window[cb]
+      script.remove()
+    }
+
+    window[cb] = (data) => { cleanup(); resolve(data) }
+    script.onerror = () => { cleanup(); reject(new Error('Errore di rete')) }
+    script.src = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25&callback=${cb}`
+    document.head.appendChild(script)
+  })
+}
+
 export default function MusicPicker({ onSelect, onClose }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
@@ -28,14 +47,7 @@ export default function MusicPicker({ onSelect, onClose }) {
     setLoading(true)
     setFetchError(null)
     try {
-      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25`
-      let res = await fetch(url)
-      if (!res.ok) {
-        // fallback proxy
-        res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      }
-      const json = await res.json()
+      const json = await itunesJsonp(term)
       const filtered = (json.results ?? []).filter(s => s.previewUrl)
       setResults(filtered)
     } catch (e) {
