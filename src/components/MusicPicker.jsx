@@ -3,23 +3,23 @@ import { X, Search, Music, Play, Pause, Check } from 'lucide-react'
 
 const TRENDING_TERM = 'pop hits 2024'
 
-function itunesJsonp(term) {
-  return new Promise((resolve, reject) => {
-    const cb = `_itcb_${Date.now()}_${Math.random().toString(36).slice(2)}`
-    const script = document.createElement('script')
-    const timer = setTimeout(() => { cleanup(); reject(new Error('Timeout')) }, 8000)
-
-    function cleanup() {
-      clearTimeout(timer)
-      delete window[cb]
-      script.remove()
-    }
-
-    window[cb] = (data) => { cleanup(); resolve(data) }
-    script.onerror = () => { cleanup(); reject(new Error('Errore di rete')) }
-    script.src = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25&callback=${cb}`
-    document.head.appendChild(script)
-  })
+async function itunesSearch(term) {
+  const target = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25`
+  const proxies = [
+    `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+    target,
+  ]
+  for (const url of proxies) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(6000) })
+      if (!res.ok) continue
+      const json = await res.json()
+      if (json.results) return json
+    } catch {}
+  }
+  throw new Error('Servizio musica non disponibile')
 }
 
 export default function MusicPicker({ onSelect, onClose }) {
@@ -47,7 +47,7 @@ export default function MusicPicker({ onSelect, onClose }) {
     setLoading(true)
     setFetchError(null)
     try {
-      const json = await itunesJsonp(term)
+      const json = await itunesSearch(term)
       const filtered = (json.results ?? []).filter(s => s.previewUrl)
       setResults(filtered)
     } catch (e) {
