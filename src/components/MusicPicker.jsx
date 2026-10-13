@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Search, Music, Play, Pause, Check } from 'lucide-react'
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 const TRENDING_TERM = 'top hits'
 
 export default function MusicPicker({ onSelect, onClose }) {
@@ -24,21 +26,17 @@ export default function MusicPicker({ onSelect, onClose }) {
   async function loadSongs(term) {
     setLoading(true)
     try {
-      const target = `https://api.deezer.com/search?q=${encodeURIComponent(term)}&limit=30`
-      const urls = [
-        `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
-      ]
-      let json = null
-      for (const url of urls) {
-        try {
-          const res = await fetch(url, { signal: AbortSignal.timeout(6000) })
-          if (!res.ok) continue
-          const data = await res.json()
-          if (data.data) { json = data; break }
-        } catch {}
-      }
-      setResults((json?.data ?? []).filter(s => s.preview))
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/music-search?term=${encodeURIComponent(term)}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_ANON_KEY,
+          },
+        }
+      )
+      const json = await res.json()
+      setResults((json.data ?? []).filter(s => s.preview))
     } catch {
       setResults([])
     }

@@ -11,10 +11,11 @@ serve(async (req) => {
   }
 
   const url = new URL(req.url)
-  const term = url.searchParams.get('term') ?? 'pop hits 2024'
+  const term = url.searchParams.get('term') ?? 'top hits'
 
-  const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25`
-  const res = await fetch(itunesUrl)
+  const res = await fetch(
+    `https://api.deezer.com/search?q=${encodeURIComponent(term)}&limit=30`
+  )
   const json = await res.json()
 
   return new Response(JSON.stringify(json), {
