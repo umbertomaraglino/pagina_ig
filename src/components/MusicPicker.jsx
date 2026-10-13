@@ -1,42 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Search, Music, Play, Pause, Check } from 'lucide-react'
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 const TRENDING_TERM = 'pop hits 2024'
-
-async function itunesSearch(term) {
-  const target = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25`
-  const proxies = [
-    `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
-    target,
-  ]
-  for (const url of proxies) {
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(6000) })
-      if (!res.ok) continue
-      const json = await res.json()
-      if (json.results) return json
-    } catch {}
-  }
-  throw new Error('Servizio musica non disponibile')
-}
 
 export default function MusicPicker({ onSelect, onClose }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
   const [playingId, setPlayingId] = useState(null)
-  const [fetchError, setFetchError] = useState(null)
   const audioRef = useRef(new Audio())
 
-  // Carica i "suggeriti" all'apertura
   useEffect(() => {
     loadSongs(TRENDING_TERM)
     return () => { audioRef.current.pause() }
   }, [])
 
-  // Ricerca con debounce
   useEffect(() => {
     if (!query.trim()) { loadSongs(TRENDING_TERM); return }
     const t = setTimeout(() => loadSongs(query), 450)
@@ -45,13 +25,19 @@ export default function MusicPicker({ onSelect, onClose }) {
 
   async function loadSongs(term) {
     setLoading(true)
-    setFetchError(null)
     try {
-      const json = await itunesSearch(term)
-      const filtered = (json.results ?? []).filter(s => s.previewUrl)
-      setResults(filtered)
-    } catch (e) {
-      setFetchError(e.message)
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/music-search?term=${encodeURIComponent(term)}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_ANON_KEY,
+          },
+        }
+      )
+      const json = await res.json()
+      setResults((json.results ?? []).filter(s => s.previewUrl))
+    } catch {
       setResults([])
     }
     setLoading(false)
@@ -88,14 +74,12 @@ export default function MusicPicker({ onSelect, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-white dark:bg-black">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 h-11 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
         <button onClick={handleClose} aria-label="Chiudi"><X size={24} strokeWidth={1.8} /></button>
         <span className="font-semibold text-sm">Scegli musica</span>
         <div className="w-6" />
       </div>
 
-      {/* Barra di ricerca */}
       <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-900 flex-shrink-0">
         <div className="flex items-center gap-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2">
           <Search size={15} className="text-gray-400 flex-shrink-0" />
@@ -115,22 +99,16 @@ export default function MusicPicker({ onSelect, onClose }) {
         </div>
       </div>
 
-      {/* Etichetta sezione */}
       <div className="px-4 pt-3 pb-1 flex-shrink-0">
         <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">
           {query.trim() ? 'Risultati' : 'Suggeriti'}
         </span>
       </div>
 
-      {/* Lista canzoni */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex justify-center py-14">
             <div className="w-8 h-8 border-2 border-gray-200 dark:border-gray-700 border-t-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
-          </div>
-        ) : fetchError ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-2 px-4">
-            <p className="text-red-400 text-xs text-center break-all">{fetchError}</p>
           </div>
         ) : results.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-300 dark:text-gray-600">
@@ -150,7 +128,6 @@ export default function MusicPicker({ onSelect, onClose }) {
         )}
       </div>
 
-      {/* Note legali */}
       <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-900 flex-shrink-0">
         <p className="text-[10px] text-gray-400 text-center">Anteprime 30s · iTunes / Apple Music</p>
       </div>
@@ -161,7 +138,6 @@ export default function MusicPicker({ onSelect, onClose }) {
 function SongRow({ song, playing, onPlay, onSelect }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 dark:border-gray-900">
-      {/* Cover */}
       <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-gray-700">
         {song.artworkUrl60 ? (
           <img src={song.artworkUrl60} alt="" className="w-full h-full object-cover" />
@@ -172,13 +148,11 @@ function SongRow({ song, playing, onPlay, onSelect }) {
         )}
       </div>
 
-      {/* Titolo + artista */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold leading-tight truncate">{song.trackName}</p>
         <p className="text-xs text-gray-400 truncate mt-0.5">{song.artistName}</p>
       </div>
 
-      {/* Play 30s */}
       <button
         onClick={onPlay}
         className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -192,7 +166,6 @@ function SongRow({ song, playing, onPlay, onSelect }) {
         }
       </button>
 
-      {/* Seleziona */}
       <button
         onClick={onSelect}
         className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0"
