@@ -30,7 +30,7 @@ export default function PostGrid({ posts, onPostClick, onAddPost }) {
                 <img
                   src={post.image_url}
                   alt={post.caption ?? ''}
-                  className="absolute inset-0 w-full h-full object-cover active:opacity-80 transition-opacity"
+                  className="absolute inset-0 w-full h-full object-contain active:opacity-80 transition-opacity"
                 />
                 {post.post_images?.length > 1 && (
                   <div className="absolute top-1.5 right-1.5 pointer-events-none">
