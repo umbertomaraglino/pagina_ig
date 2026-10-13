@@ -27,7 +27,7 @@ export default function MusicPicker({ onSelect, onClose }) {
       const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25&country=it`
       const res = await fetch(url)
       const json = await res.json()
-      setResults((json.results ?? []).filter(s => s.previewUrl))
+      setResults(json.results ?? [])
     } catch {
       setResults([])
     }
@@ -127,6 +127,7 @@ export default function MusicPicker({ onSelect, onClose }) {
 }
 
 function SongRow({ song, playing, onPlay, onSelect }) {
+  const hasPreview = !!song.previewUrl
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 dark:border-gray-900">
       <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-gray-700">
@@ -145,10 +146,11 @@ function SongRow({ song, playing, onPlay, onSelect }) {
       </div>
 
       <button
-        onClick={onPlay}
+        onClick={hasPreview ? onPlay : undefined}
+        disabled={!hasPreview}
         className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
           playing ? 'bg-black dark:bg-white' : 'bg-gray-100 dark:bg-gray-800'
-        }`}
+        } disabled:opacity-30`}
         aria-label={playing ? 'Pausa' : 'Ascolta anteprima'}
       >
         {playing
