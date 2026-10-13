@@ -22,6 +22,14 @@ export default function StoryViewer({ highlight, onClose, onDeleteStory }) {
     if (index > 0) { setIndex(i => i - 1); setProgress(0) }
   }, [index])
 
+  // Corregge l'indice se la storia corrente è stata eliminata
+  useEffect(() => {
+    if (stories.length > 0 && index >= stories.length) {
+      setIndex(stories.length - 1)
+      setProgress(0)
+    }
+  }, [stories.length, index])
+
   // Animazione progress bar
   useEffect(() => {
     if (!stories.length) return
@@ -81,6 +89,7 @@ export default function StoryViewer({ highlight, onClose, onDeleteStory }) {
   }
 
   const current = stories[index]
+  if (!current) return null
   const filterCss = FILTERS.find(f => f.id === (current.filter_name ?? 'normal'))?.css ?? 'none'
   const hasMusic = !!(current.music_title)
 
