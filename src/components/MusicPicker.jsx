@@ -24,11 +24,21 @@ export default function MusicPicker({ onSelect, onClose }) {
   async function loadSongs(term) {
     setLoading(true)
     try {
-      const res = await fetch(
-        `https://api.deezer.com/search?q=${encodeURIComponent(term)}&limit=30&output=json`
-      )
-      const json = await res.json()
-      setResults((json.data ?? []).filter(s => s.preview))
+      const target = `https://api.deezer.com/search?q=${encodeURIComponent(term)}&limit=30`
+      const urls = [
+        `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
+      ]
+      let json = null
+      for (const url of urls) {
+        try {
+          const res = await fetch(url, { signal: AbortSignal.timeout(6000) })
+          if (!res.ok) continue
+          const data = await res.json()
+          if (data.data) { json = data; break }
+        } catch {}
+      }
+      setResults((json?.data ?? []).filter(s => s.preview))
     } catch {
       setResults([])
     }
