@@ -4,8 +4,6 @@
 
 La parte più bella di Instagram è il profilo — è un diario visivo da scorrere per rivivere i ricordi. Tutto il resto (il feed, i reel, lo scroll infinito) è solo rumore. IGPage tiene solo la parte che vale: una pagina profilo personale, protetta da password, sempre accessibile e condivisibile con chiunque — anche con chi non ha Instagram.
 
-**Demo live:** [umbertomaraglino.github.io/pagina_ig](https://umbertomaraglino.github.io/pagina_ig)
-
 ---
 
 ## Screenshot
@@ -48,6 +46,8 @@ La parte più bella di Instagram è il profilo — è un diario visivo da scorre
 | CI/CD | GitHub Actions (deploy automatico ad ogni push su `main`) |
 
 La Supabase Edge Function è il pezzo chiave per la ricerca musicale: il browser chiama il dominio Supabase (nessun problema di CORS), e la funzione recupera i dati da Deezer lato server.
+
+**Nota**: le foto sono tutte generate dall'AI
 
 ---
 
