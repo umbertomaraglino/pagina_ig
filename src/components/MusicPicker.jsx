@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Search, Music, Play, Pause, Check } from 'lucide-react'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 const TRENDING_TERM = 'pop hits 2024'
 
 export default function MusicPicker({ onSelect, onClose }) {
@@ -26,15 +24,8 @@ export default function MusicPicker({ onSelect, onClose }) {
   async function loadSongs(term) {
     setLoading(true)
     try {
-      const res = await fetch(
-        `${SUPABASE_URL}/functions/v1/music-search?term=${encodeURIComponent(term)}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'apikey': SUPABASE_ANON_KEY,
-          },
-        }
-      )
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25&country=it`
+      const res = await fetch(url)
       const json = await res.json()
       setResults((json.results ?? []).filter(s => s.previewUrl))
     } catch {
