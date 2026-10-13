@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Search, Music, Play, Pause, Check } from 'lucide-react'
 
-const TRENDING_TERM = 'pop hits 2024'
+const TRENDING_TERM = 'top hits'
 
 export default function MusicPicker({ onSelect, onClose }) {
   const [query, setQuery] = useState('')
@@ -24,10 +24,10 @@ export default function MusicPicker({ onSelect, onClose }) {
   async function loadSongs(term) {
     setLoading(true)
     try {
-      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25&country=it`
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=50&country=us`
       const res = await fetch(url)
       const json = await res.json()
-      setResults(json.results ?? [])
+      setResults((json.results ?? []).filter(s => s.previewUrl))
     } catch {
       setResults([])
     }
