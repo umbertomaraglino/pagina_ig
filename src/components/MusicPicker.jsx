@@ -24,10 +24,11 @@ export default function MusicPicker({ onSelect, onClose }) {
   async function loadSongs(term) {
     setLoading(true)
     try {
-      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=50&country=us`
-      const res = await fetch(url)
+      const res = await fetch(
+        `https://api.deezer.com/search?q=${encodeURIComponent(term)}&limit=30&output=json`
+      )
       const json = await res.json()
-      setResults((json.results ?? []).filter(s => s.previewUrl))
+      setResults((json.data ?? []).filter(s => s.preview))
     } catch {
       setResults([])
     }
@@ -36,13 +37,13 @@ export default function MusicPicker({ onSelect, onClose }) {
 
   function togglePlay(song) {
     const audio = audioRef.current
-    if (playingId === song.trackId) {
+    if (playingId === song.id) {
       audio.pause()
       setPlayingId(null)
     } else {
-      audio.src = song.previewUrl
+      audio.src = song.preview
       audio.play().catch(() => {})
-      setPlayingId(song.trackId)
+      setPlayingId(song.id)
     }
   }
 
@@ -51,10 +52,10 @@ export default function MusicPicker({ onSelect, onClose }) {
   function handleSelect(song) {
     audioRef.current.pause()
     onSelect({
-      title:      song.trackName,
-      artist:     song.artistName,
-      previewUrl: song.previewUrl,
-      artworkUrl: song.artworkUrl60 ?? song.artworkUrl100 ?? null,
+      title:      song.title,
+      artist:     song.artist?.name ?? '',
+      previewUrl: song.preview,
+      artworkUrl: song.album?.cover_medium ?? song.album?.cover_small ?? null,
     })
   }
 
@@ -109,9 +110,9 @@ export default function MusicPicker({ onSelect, onClose }) {
         ) : (
           results.map(song => (
             <SongRow
-              key={song.trackId}
+              key={song.id}
               song={song}
-              playing={playingId === song.trackId}
+              playing={playingId === song.id}
               onPlay={() => togglePlay(song)}
               onSelect={() => handleSelect(song)}
             />
@@ -120,19 +121,18 @@ export default function MusicPicker({ onSelect, onClose }) {
       </div>
 
       <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-900 flex-shrink-0">
-        <p className="text-[10px] text-gray-400 text-center">Anteprime 30s · iTunes / Apple Music</p>
+        <p className="text-[10px] text-gray-400 text-center">Anteprime 30s · Deezer</p>
       </div>
     </div>
   )
 }
 
 function SongRow({ song, playing, onPlay, onSelect }) {
-  const hasPreview = !!song.previewUrl
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 dark:border-gray-900">
       <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-gray-700">
-        {song.artworkUrl60 ? (
-          <img src={song.artworkUrl60} alt="" className="w-full h-full object-cover" />
+        {song.album?.cover_small ? (
+          <img src={song.album.cover_small} alt="" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Music size={18} className="text-gray-400" />
@@ -141,16 +141,15 @@ function SongRow({ song, playing, onPlay, onSelect }) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold leading-tight truncate">{song.trackName}</p>
-        <p className="text-xs text-gray-400 truncate mt-0.5">{song.artistName}</p>
+        <p className="text-sm font-semibold leading-tight truncate">{song.title}</p>
+        <p className="text-xs text-gray-400 truncate mt-0.5">{song.artist?.name}</p>
       </div>
 
       <button
-        onClick={hasPreview ? onPlay : undefined}
-        disabled={!hasPreview}
+        onClick={onPlay}
         className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
           playing ? 'bg-black dark:bg-white' : 'bg-gray-100 dark:bg-gray-800'
-        } disabled:opacity-30`}
+        }`}
         aria-label={playing ? 'Pausa' : 'Ascolta anteprima'}
       >
         {playing
