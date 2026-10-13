@@ -94,6 +94,28 @@ export default function App() {
     if (authed) fetchAll()
   }, [authed, fetchAll])
 
+  async function handleDeleteStory(highlightId, storyId, imageUrl) {
+    const marker = '/object/public/highlights/'
+    const idx = imageUrl?.indexOf(marker)
+    if (idx >= 0) {
+      const path = decodeURIComponent(imageUrl.slice(idx + marker.length))
+      await supabase.storage.from('highlights').remove([path])
+    }
+
+    await supabase.from('highlight_stories').delete().eq('id', storyId)
+
+    setHighlights(prev => prev.map(h => {
+      if (h.id !== highlightId) return h
+      return { ...h, highlight_stories: h.highlight_stories.filter(s => s.id !== storyId) }
+    }))
+
+    setActiveStory(prev => {
+      if (!prev || prev.id !== highlightId) return prev
+      const updated = { ...prev, highlight_stories: prev.highlight_stories.filter(s => s.id !== storyId) }
+      return updated.highlight_stories.length === 0 ? null : updated
+    })
+  }
+
   async function handleDeletePost(postId) {
     const post = posts.find(p => p.id === postId)
     if (!post) return
@@ -289,7 +311,11 @@ export default function App() {
       </div>
 
       {activeStory && (
-        <StoryViewer highlight={activeStory} onClose={() => setActiveStory(null)} />
+        <StoryViewer
+          highlight={activeStory}
+          onClose={() => setActiveStory(null)}
+          onDeleteStory={handleDeleteStory}
+        />
       )}
 
       {activePost && (

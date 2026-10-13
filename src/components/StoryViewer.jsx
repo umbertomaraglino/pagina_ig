@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, Music, Volume2, VolumeX } from 'lucide-react'
+import { X, Music, Volume2, VolumeX, Trash2 } from 'lucide-react'
 import { FILTERS } from './CreateModal'
 
 const STORY_DURATION = 5000
 
-export default function StoryViewer({ highlight, onClose }) {
+export default function StoryViewer({ highlight, onClose, onDeleteStory }) {
   const stories = highlight.highlight_stories ?? []
   const [index, setIndex] = useState(0)
   const [progress, setProgress] = useState(0)
@@ -116,6 +116,14 @@ export default function StoryViewer({ highlight, onClose }) {
           {stories[index]?.music_preview_url && (
             <button onClick={() => setMuted(m => !m)} className="p-1">
               {muted ? <VolumeX size={20} color="white" /> : <Volume2 size={20} color="white" />}
+            </button>
+          )}
+          {onDeleteStory && (
+            <button
+              onClick={() => onDeleteStory(highlight.id, stories[index].id, stories[index].image_url)}
+              className="p-1"
+            >
+              <Trash2 size={20} color="white" />
             </button>
           )}
           <button onClick={onClose} className="p-1"><X size={24} color="white" /></button>
