@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, ImageIcon, Plus, Music, Trash2, ChevronRight } from 'lucide-react'
 import MusicPicker from './MusicPicker'
+import ImageEditor from './ImageEditor'
 
 const TITLES = {
   post:      'Nuovo post',
@@ -269,6 +270,7 @@ function PostForm({ onSubmit, loading }) {
 function HighlightForm({ highlights, onSubmit, loading }) {
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
+  const [editingSrc, setEditingSrc] = useState(null)
   const [hlId, setHlId] = useState('new')
   const [newTitle, setNewTitle] = useState('')
   const [filterName, setFilterName] = useState('normal')
@@ -280,8 +282,13 @@ function HighlightForm({ highlights, onSubmit, loading }) {
 
   function pick(f) {
     if (!f) return
-    setFile(f)
-    setPreview(URL.createObjectURL(f))
+    setEditingSrc(URL.createObjectURL(f))
+  }
+
+  function onEditorConfirm(croppedFile, croppedPreview) {
+    setFile(croppedFile)
+    setPreview(croppedPreview)
+    setEditingSrc(null)
   }
 
   function submit(e) {
@@ -297,6 +304,16 @@ function HighlightForm({ highlights, onSubmit, loading }) {
       musicPreviewUrl: selectedSong?.previewUrl ?? null,
       musicArtworkUrl: selectedSong?.artworkUrl ?? null,
     })
+  }
+
+  if (editingSrc) {
+    return (
+      <ImageEditor
+        src={editingSrc}
+        onConfirm={onEditorConfirm}
+        onCancel={() => setEditingSrc(null)}
+      />
+    )
   }
 
   return (
@@ -332,16 +349,25 @@ function HighlightForm({ highlights, onSubmit, loading }) {
             <img
               src={preview}
               alt=""
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
               style={{ filter: activeFilter?.css ?? 'none' }}
             />
-            <button
-              type="button"
-              onClick={() => { setFile(null); setPreview(null) }}
-              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center"
-            >
-              <Trash2 size={14} color="white" />
-            </button>
+            <div className="absolute top-2 right-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingSrc(preview)}
+                className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center"
+              >
+                <ImageIcon size={14} color="white" />
+              </button>
+              <button
+                type="button"
+                onClick={() => { setFile(null); setPreview(null) }}
+                className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center"
+              >
+                <Trash2 size={14} color="white" />
+              </button>
+            </div>
           </div>
         ) : (
           <button
