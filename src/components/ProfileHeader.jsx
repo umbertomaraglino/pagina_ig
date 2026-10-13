@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import HighlightCircle from './HighlightCircle'
 
 export default function ProfileHeader({
@@ -61,9 +61,12 @@ function AvatarWithRing({ url }) {
 
       {open && url && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
           onClick={() => setOpen(false)}
         >
+          <button className="absolute top-4 right-4 p-2" onClick={() => setOpen(false)}>
+            <X size={28} color="white" />
+          </button>
           <img
             src={url}
             alt="Foto profilo"
