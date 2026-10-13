@@ -104,16 +104,24 @@ export default function App() {
 
     await supabase.from('highlight_stories').delete().eq('id', storyId)
 
-    setHighlights(prev => prev.map(h => {
-      if (h.id !== highlightId) return h
-      return { ...h, highlight_stories: h.highlight_stories.filter(s => s.id !== storyId) }
-    }))
+    const updatedStories = highlights
+      .find(h => h.id === highlightId)
+      ?.highlight_stories.filter(s => s.id !== storyId) ?? []
 
-    setActiveStory(prev => {
-      if (!prev || prev.id !== highlightId) return prev
-      const updated = { ...prev, highlight_stories: prev.highlight_stories.filter(s => s.id !== storyId) }
-      return updated.highlight_stories.length === 0 ? null : updated
-    })
+    if (updatedStories.length === 0) {
+      await supabase.from('highlights').delete().eq('id', highlightId)
+      setHighlights(prev => prev.filter(h => h.id !== highlightId))
+      setActiveStory(null)
+    } else {
+      setHighlights(prev => prev.map(h => {
+        if (h.id !== highlightId) return h
+        return { ...h, highlight_stories: updatedStories }
+      }))
+      setActiveStory(prev => {
+        if (!prev || prev.id !== highlightId) return prev
+        return { ...prev, highlight_stories: updatedStories }
+      })
+    }
   }
 
   async function handleDeletePost(postId) {

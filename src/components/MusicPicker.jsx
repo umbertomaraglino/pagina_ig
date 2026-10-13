@@ -28,13 +28,16 @@ export default function MusicPicker({ onSelect, onClose }) {
     setLoading(true)
     setFetchError(null)
     try {
-      const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25`
-      const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(itunesUrl)}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&limit=25`
+      let res = await fetch(url)
+      if (!res.ok) {
+        // fallback proxy
+        res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(url)}`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      }
       const json = await res.json()
       const filtered = (json.results ?? []).filter(s => s.previewUrl)
       setResults(filtered)
-      if (filtered.length === 0) setFetchError(`0 risultati (raw: ${JSON.stringify(json).slice(0, 80)})`)
     } catch (e) {
       setFetchError(e.message)
       setResults([])
